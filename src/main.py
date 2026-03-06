@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from torch import nn
 from torch.optim import Adam
 from model import Net
+import matplotlib.pyplot as plt
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Device:", device)
@@ -61,6 +62,13 @@ optimizer = Adam(model.parameters(), lr=0.001)
 
 
 
+#Tracking
+train_losses = []
+val_losses = []
+train_accuracies = []
+val_accuracies = []
+
+
 
 
 # Training Loop
@@ -97,6 +105,7 @@ for epoch in range(epochs):
     train_loss /= train_total
     train_acc = 100 * train_correct / train_total
 
+
     # ---- VALIDATE ----
     model.eval()
     val_loss = 0
@@ -121,6 +130,38 @@ for epoch in range(epochs):
     val_loss /= val_total
     val_acc = 100 * val_correct / val_total
 
+    # Save metrics for plotting
+    train_losses.append(train_loss)
+    val_losses.append(val_loss)
+    train_accuracies.append(train_acc)
+    val_accuracies.append(val_acc)
+
     print(f"\nEpoch [{epoch+1}/{epochs}]")
     print(f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}%")
     print(f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.2f}%")
+
+
+    # -----------------------------
+# Plot Training Results
+# -----------------------------
+
+# Plot Loss Curve
+plt.figure()
+plt.plot(train_losses)
+plt.plot(val_losses)
+plt.legend(["Train Loss", "Validation Loss"])
+plt.title("Loss Curve")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.show()
+
+
+# Plot Accuracy Curve
+plt.figure()
+plt.plot(train_accuracies)
+plt.plot(val_accuracies)
+plt.legend(["Train Accuracy", "Validation Accuracy"])
+plt.title("Accuracy Curve")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy (%)")
+plt.show()
