@@ -6,17 +6,17 @@ from torch import nn
 from torch.optim import Adam
 from model import Net
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Device:", device)
-
 
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TRAIN_PATH = os.path.join(BASE_DIR, "data", "afhq", "train")
 VAL_PATH = os.path.join(BASE_DIR, "data", "afhq", "val")
-
 
 
 # Transform
@@ -26,13 +26,9 @@ transform = transforms.Compose([
 ])
 
 
-
 # Datasets
 train_dataset = datasets.ImageFolder(TRAIN_PATH, transform=transform)
 val_dataset = datasets.ImageFolder(VAL_PATH, transform=transform)
-
-
-
 
 
 # DataLoader
@@ -48,7 +44,6 @@ print("Batch shape:", images.shape)
 print("Labels shape:", labels.shape)
 
 
-
 # Model
 num_classes = len(train_dataset.classes)
 model = Net(num_classes).to(device)
@@ -61,18 +56,14 @@ criterion = nn.CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=0.001)
 
 
-
-#Tracking
+# Tracking
 train_losses = []
 val_losses = []
 train_accuracies = []
 val_accuracies = []
 
 
-
-
 # Training Loop
-
 epochs = 5
 
 for epoch in range(epochs):
@@ -84,6 +75,7 @@ for epoch in range(epochs):
     train_total = 0
 
     for images, labels in train_loader:
+
         images = images.to(device)
         labels = labels.to(device)
 
@@ -98,9 +90,9 @@ for epoch in range(epochs):
         train_loss += loss.item() * images.size(0)
 
         _, predicted = torch.max(outputs, 1)
+
         train_total += labels.size(0)
         train_correct += (predicted == labels).sum().item()
-
 
     train_loss /= train_total
     train_acc = 100 * train_correct / train_total
@@ -112,8 +104,13 @@ for epoch in range(epochs):
     val_correct = 0
     val_total = 0
 
+    all_preds = []
+    all_labels = []
+
     with torch.no_grad():
+
         for images, labels in val_loader:
+
             images = images.to(device)
             labels = labels.to(device)
 
@@ -123,29 +120,64 @@ for epoch in range(epochs):
             val_loss += loss.item() * images.size(0)
 
             _, predicted = torch.max(outputs, 1)
+
+            all_preds.extend(predicted.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+
             val_total += labels.size(0)
             val_correct += (predicted == labels).sum().item()
-
 
     val_loss /= val_total
     val_acc = 100 * val_correct / val_total
 
-    # Save metrics for plotting
+
+    # Save metrics
     train_losses.append(train_loss)
     val_losses.append(val_loss)
     train_accuracies.append(train_acc)
     val_accuracies.append(val_acc)
+
 
     print(f"\nEpoch [{epoch+1}/{epochs}]")
     print(f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}%")
     print(f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.2f}%")
 
 
-    # -----------------------------
-# Plot Training Results
+# -----------------------------
+# SAVE MODEL
 # -----------------------------
 
-# Plot Loss Curve
+torch.save(model.state_dict(), "cnn_model.pth")
+print("\nModel saved as cnn_model.pth")
+
+
+# -----------------------------
+# CONFUSION MATRIX
+# -----------------------------
+
+cm = confusion_matrix(all_labels, all_preds)
+
+plt.figure(figsize=(6,6))
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=train_dataset.classes,
+    yticklabels=train_dataset.classes
+)
+
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.title("Confusion Matrix")
+plt.show()
+
+
+# -----------------------------
+# PLOT TRAINING RESULTS
+# -----------------------------
+
+# Loss Curve
 plt.figure()
 plt.plot(train_losses)
 plt.plot(val_losses)
@@ -156,7 +188,7 @@ plt.ylabel("Loss")
 plt.show()
 
 
-# Plot Accuracy Curve
+# Accuracy Curve
 plt.figure()
 plt.plot(train_accuracies)
 plt.plot(val_accuracies)
