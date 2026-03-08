@@ -51,7 +51,7 @@ model = Net(num_classes).to(device)
 print(model)
 
 
-# Loss + Optimizer
+# Loss & Optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=0.001)
 
@@ -68,7 +68,9 @@ epochs = 5
 
 for epoch in range(epochs):
 
-    # ---- TRAIN ----
+
+
+    # train
     model.train()
     train_loss = 0
     train_correct = 0
@@ -98,7 +100,7 @@ for epoch in range(epochs):
     train_acc = 100 * train_correct / train_total
 
 
-    # ---- VALIDATE ----
+#validate model
     model.eval()
     val_loss = 0
     val_correct = 0
@@ -143,17 +145,16 @@ for epoch in range(epochs):
     print(f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.2f}%")
 
 
-# -----------------------------
+
 # SAVE MODEL
-# -----------------------------
+
 
 torch.save(model.state_dict(), "cnn_model.pth")
 print("\nModel saved as cnn_model.pth")
 
 
-# -----------------------------
-# CONFUSION MATRIX
-# -----------------------------
+# confusion matrix
+
 
 cm = confusion_matrix(all_labels, all_preds)
 
@@ -173,9 +174,8 @@ plt.title("Confusion Matrix")
 plt.show()
 
 
-# -----------------------------
-# PLOT TRAINING RESULTS
-# -----------------------------
+# Plot training results
+
 
 # Loss Curve
 plt.figure()
